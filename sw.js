@@ -1,4 +1,4 @@
-const REVISION = 'v3200-aa72eea4';
+const REVISION = 'v3201-mobile-audiobook';
 const CACHE_NAME = `lumen-reader-${REVISION}`;
 const PRECACHE_ASSETS = [
   "./",
@@ -79,12 +79,16 @@ const FALLBACK_CORE_ASSETS = [
   './icons/icon-512.png',
 ];
 
-const INITIAL_PRECACHE_LIST = Array.from(
-  new Set([
-    ...FALLBACK_CORE_ASSETS,
-    ...(Array.isArray(PRECACHE_ASSETS) ? PRECACHE_ASSETS : []),
-  ]),
-);
+// Cache only the shell at install time, never the full TTS engine or optional screens.
+// All optional assets continue caching on first use through the fetch handler.
+const INITIAL_PRECACHE_LIST = Array.from(new Set([
+  ...FALLBACK_CORE_ASSETS,
+  ...PRECACHE_ASSETS.filter((asset) =>
+    asset.startsWith('./assets/') &&
+    (asset.includes('/index-') || asset.includes('/rolldown-runtime-') ||
+     asset.includes('/vendor-react-') || asset.includes('/vendor-icons-'))
+  ),
+]));
 
 function isPhononModelAsset(pathname) {
   return pathname.includes('/models/phonon/') || pathname.startsWith('models/phonon/');
