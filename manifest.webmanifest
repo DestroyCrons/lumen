@@ -1,0 +1,41 @@
+{
+  "name": "Lumen — Lectura y Audiolibros",
+  "short_name": "Lumen",
+  "description": "Lector editorial y audiolibros con voz natural, offline y sin distracciones.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#13161B",
+  "theme_color": "#13161B",
+  "lang": "es",
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "application/epub+zip": [".epub"],
+        "application/pdf": [".pdf"],
+        "text/markdown": [".md", ".markdown"],
+        "text/plain": [".txt"]
+      }
+    }
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icons/icon-app-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
