@@ -1,5 +1,75 @@
-const CACHE_NAME = 'lumen-reader-v4';
-const CORE_ASSETS = [
+const REVISION = 'v3200-aa72eea4';
+const CACHE_NAME = `lumen-reader-${REVISION}`;
+const PRECACHE_ASSETS = [
+  "./",
+  "./assets/AudiobookPlayerModal-DtebqDC_.js",
+  "./assets/CloudLibraryModal-B5YQQhQP.js",
+  "./assets/CoverViewerModal-Dyvg-xuT.js",
+  "./assets/EditBookModal-CFY423um.js",
+  "./assets/OfflineDownloadsModal-MAxUpTrZ.js",
+  "./assets/ReaderShell-D-OPd8Yj.js",
+  "./assets/ReadingInsightsModal-NrGXJyf3.js",
+  "./assets/UpdateModal-p8lYTo7s.js",
+  "./assets/WelcomeOnboardingModal-5727FJFz.js",
+  "./assets/WidgetsPreviewModal-BI94InMi.js",
+  "./assets/index-CG28viMC.js",
+  "./assets/index-CGATZYiD.css",
+  "./assets/loader-BQ_A75jj.js",
+  "./assets/parser-CojPdliS.js",
+  "./assets/parser-DAHshVAN.js",
+  "./assets/pdf.worker.min-CIqJB0yW.mjs",
+  "./assets/rolldown-runtime-pP25SEvz.js",
+  "./assets/samples-Urof2Owz.js",
+  "./assets/sanitize-D-pc1GqD.js",
+  "./assets/vendor-epub-yRlRB-6x.js",
+  "./assets/vendor-icons-CB-KK8Jy.js",
+  "./assets/vendor-pdf-6KAokeL4.js",
+  "./assets/vendor-react-D-H9Nj3i.js",
+  "./icons/favicon-32.png",
+  "./icons/favicon-64.png",
+  "./icons/icon-180.png",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
+  "./icons/icon-app-180.png",
+  "./index.html",
+  "./manifest.webmanifest",
+  "./phonon-runtime/LICENSE-APACHE",
+  "./phonon-runtime/LICENSE-MIT",
+  "./phonon-runtime/THIRD_PARTY_LICENSES.md",
+  "./phonon-runtime/device.js",
+  "./phonon-runtime/fetch.js",
+  "./phonon-runtime/gpu/codec.js",
+  "./phonon-runtime/gpu/dispatch.js",
+  "./phonon-runtime/gpu/engine.js",
+  "./phonon-runtime/gpu/gguf.js",
+  "./phonon-runtime/gpu/kernels.js",
+  "./phonon-runtime/gpu/lm.js",
+  "./phonon-runtime/gpu/support.js",
+  "./phonon-runtime/gpu/weights.js",
+  "./phonon-runtime/hub.js",
+  "./phonon-runtime/index.js",
+  "./phonon-runtime/simd.js",
+  "./phonon-runtime/threads.js",
+  "./phonon-runtime/wasm-threads/phonon_tts.d.ts",
+  "./phonon-runtime/wasm-threads/phonon_tts.js",
+  "./phonon-runtime/wasm-threads/phonon_tts_bg.wasm",
+  "./phonon-runtime/wasm-threads/phonon_tts_bg.wasm.d.ts",
+  "./phonon-runtime/wasm-threads/phonon_tts_simd_bg.wasm",
+  "./phonon-runtime/wasm-threads/snippets/wasm-bindgen-rayon-38edf6e439f6d70d/src/workerHelpers.js",
+  "./phonon-runtime/wasm/phonon_tts.d.ts",
+  "./phonon-runtime/wasm/phonon_tts.js",
+  "./phonon-runtime/wasm/phonon_tts_bg.wasm",
+  "./phonon-runtime/wasm/phonon_tts_bg.wasm.d.ts",
+  "./phonon-runtime/wasm/phonon_tts_simd_bg.wasm",
+  "./phonon-runtime/wav.js",
+  "./phonon-runtime/worker.js",
+  "./samples/cronicas-del-farero.epub",
+  "./samples/el-arte-de-la-lectura.epub",
+  "./samples/guia-rapida-folio.md",
+  "./samples/manual-tipografia-editorial.pdf"
+];
+
+const FALLBACK_CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
@@ -9,9 +79,34 @@ const CORE_ASSETS = [
   './icons/icon-512.png',
 ];
 
+const INITIAL_PRECACHE_LIST = Array.from(
+  new Set([
+    ...FALLBACK_CORE_ASSETS,
+    ...(Array.isArray(PRECACHE_ASSETS) ? PRECACHE_ASSETS : []),
+  ]),
+);
+
+function isPhononModelAsset(pathname) {
+  return pathname.includes('/models/phonon/') || pathname.startsWith('models/phonon/');
+}
+
+function isCacheableAppAsset(pathname) {
+  if (isPhononModelAsset(pathname)) return false;
+  return (
+    pathname.includes('/assets/') ||
+    pathname.includes('/samples/') ||
+    pathname.includes('/icons/') ||
+    pathname.includes('/phonon-runtime/') ||
+    /\.(?:js|mjs|css|wasm|webmanifest|png|svg|ico|woff2?)$/i.test(pathname)
+  );
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)).then(() => self.skipWaiting()),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(INITIAL_PRECACHE_LIST))
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -19,7 +114,14 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then((keys) =>
+        Promise.all(
+          // Restrict cleanup strictly to old `lumen-reader-*` caches so phonon-tts model caches are NEVER deleted
+          keys
+            .filter((k) => k.startsWith('lumen-reader-') && k !== CACHE_NAME)
+            .map((k) => caches.delete(k)),
+        ),
+      )
       .then(() => self.clients.claim()),
   );
 });
@@ -27,34 +129,38 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
+  if (request.headers.has('range')) return;
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for HTML navigations; cache-first for static built assets and samples
+  // Let phonon-tts manage large on-demand model weights/voices under models/phonon/ directly
+  if (isPhononModelAsset(url.pathname)) {
+    return;
+  }
+
+  // Network-first for HTML navigations with offline fallback to precached index.html
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', clone));
+          }
           return res;
         })
-        .catch(() => caches.match('./index.html')),
+        .catch(() => caches.match('./index.html').then((hit) => hit || caches.match('./'))),
     );
     return;
   }
 
+  // Cache-first for static built assets, icons, samples, and phonon-runtime
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request).then((res) => {
-        if (
-          res.ok &&
-          (url.pathname.includes('/assets/') ||
-            url.pathname.includes('/samples/') ||
-            url.pathname.includes('/icons/'))
-        ) {
+        if (res.ok && isCacheableAppAsset(url.pathname)) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
