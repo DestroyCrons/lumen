@@ -1,9 +1,9 @@
-const REVISION = 'v5000-9596ee75';
+const REVISION = 'v5100-7a2753c4';
 const CACHE_NAME = `lumen-reader-${REVISION}`;
 const PRECACHE_ASSETS = [
   "./",
+  "./assets/index-Bc816Kp_.js",
   "./assets/index-Czgt5j4T.css",
-  "./assets/index-D2zT_h83.js",
   "./assets/rolldown-runtime-pP25SEvz.js",
   "./assets/vendor-icons-BB2HJt6W.js",
   "./assets/vendor-react-CoE5mB34.js",
@@ -57,6 +57,7 @@ function withCrossOriginIsolationHeaders(response) {
   const headers = new Headers(response.headers);
   headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   headers.set('Cross-Origin-Embedder-Policy', 'credentialless');
+  headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
