@@ -1,9 +1,9 @@
-const REVISION = 'v5300-8fe1ca52';
+const REVISION = 'v5400-d94710b3';
 const CACHE_NAME = `lumen-reader-${REVISION}`;
 const PRECACHE_ASSETS = [
   "./",
-  "./assets/index-C3cH6y1S.css",
-  "./assets/index-Dso_-v_A.js",
+  "./assets/index-BwT6RcFH.js",
+  "./assets/index-iZOtDceJ.css",
   "./assets/rolldown-runtime-pP25SEvz.js",
   "./assets/vendor-icons-BB2HJt6W.js",
   "./assets/vendor-react-CoE5mB34.js",
