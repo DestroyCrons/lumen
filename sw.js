@@ -1,9 +1,9 @@
-const REVISION = 'v4600-0735dd73';
+const REVISION = 'v5000-9596ee75';
 const CACHE_NAME = `lumen-reader-${REVISION}`;
 const PRECACHE_ASSETS = [
   "./",
-  "./assets/index-BfKevfh-.css",
-  "./assets/index-D0yzKjBL.js",
+  "./assets/index-Czgt5j4T.css",
+  "./assets/index-D2zT_h83.js",
   "./assets/rolldown-runtime-pP25SEvz.js",
   "./assets/vendor-icons-BB2HJt6W.js",
   "./assets/vendor-react-CoE5mB34.js",
@@ -49,6 +49,21 @@ function isCacheableAppAsset(pathname) {
   );
 }
 
+function withCrossOriginIsolationHeaders(response) {
+  if (!response) return response;
+  if (response.status === 0 || response.type === 'opaque' || response.type === 'opaqueredirect') {
+    return response;
+  }
+  const headers = new Headers(response.headers);
+  headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+  headers.set('Cross-Origin-Embedder-Policy', 'credentialless');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
@@ -92,13 +107,19 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          if (res.ok) {
-            const clone = res.clone();
+          const isolated = withCrossOriginIsolationHeaders(res);
+          if (isolated.ok) {
+            const clone = isolated.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', clone));
           }
-          return res;
+          return isolated;
         })
-        .catch(() => caches.match('./index.html').then((hit) => hit || caches.match('./'))),
+        .catch(() =>
+          caches
+            .match('./index.html')
+            .then((hit) => hit || caches.match('./'))
+            .then((hit) => (hit ? withCrossOriginIsolationHeaders(hit) : hit)),
+        ),
     );
     return;
   }
@@ -106,13 +127,14 @@ self.addEventListener('fetch', (event) => {
   // Cache-first for static built assets, icons, samples, and phonon-runtime
   event.respondWith(
     caches.match(request).then((cached) => {
-      if (cached) return cached;
+      if (cached) return withCrossOriginIsolationHeaders(cached);
       return fetch(request).then((res) => {
-        if (res.ok && isCacheableAppAsset(url.pathname)) {
-          const clone = res.clone();
+        const isolated = withCrossOriginIsolationHeaders(res);
+        if (isolated.ok && isCacheableAppAsset(url.pathname)) {
+          const clone = isolated.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
-        return res;
+        return isolated;
       });
     }),
   );
